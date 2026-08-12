@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCTV - Camera Node with Timestamp</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; text-align: center; }
+    .card { max-width: 450px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; font-size: 16px; }
+    input { background: #2a2a2a; color: #fff; }
+    button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .stealth-btn { background: #34c759; margin-top: 10px; }
+    button:disabled { background: #444; }
+    video, canvas.preview-canvas { width: 100%; border-radius: 8px; margin-top: 15px; background: #000; }
+    .status { margin-top: 10px; font-size: 14px; color: #aaa; }
+    .active { color: #34c759; }
+    .recording-badge { display: none; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-top: 10px; }
+    
+    #stealthOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      z-index: 99999;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="stealthOverlay" onclick="exitStealthMode()"></div>
+
+  <div class="card">
+    <h2>Camera Node (Timestamp Overlay)</h2>
+    <input type="text" id="cameraName" placeholder="Camera Name" value="Front Door">
+    <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
+    <button id="startBtn">Start Camera</button>
+    <button id="stealthBtn" class="stealth-btn" style="display: none;" onclick="enterStealthMode()">🕶️ Enter Black Screen (Stealth)</button>
+    
+    <div id="recordingBadge" class="recording-badge">REC - MOTION DETECTED</div>
+    
+    <!-- Hidden raw video element -->
+    <video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
+    
+    <!-- Canvas where video + timestamp are composite-rendered -->
+    <canvas id="streamCanvas" class="preview-canvas" width="1280" height="720"></canvas>
+    
+    <div id="status" class="status">Status: Disconnected</div>
+  </div>
+
+  <canvas id="motionCanvas" width="64" height="64" style="display:none;"></canvas>
+
+  <script>
+    const defaultWsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    document.getElementById('serverUrl').value = `${defaultWsProtocol}//${window.location.host}`;
+
+    const cameraId = 'cam_' + Math.random().toString(36).substring(2, 9);
+    let ws = null;
+    let rawStream = null;
+    let processedStream = null;
+    let peerConnections = {};
+    let wakeLock = null;
+
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let recordingTimeout = null;
+
+    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    const startBtn = document.getElementById('startBtn');
+    const stealthBtn = document.getElementById('stealthBtn');
+    const stealthOverlay = document.getElementById('stealthOverlay');
+    const statusDiv = document.getElementById('status');
+    const rawVideo = document.getElementById('rawVideo');
+    const streamCanvas = document.getElementById('streamCanvas');
+    const canvasCtx = streamCanvas.getContext('2d');
+    const recordingBadge = document.getElementById('recordingBadge');
+
+    startBtn.onclick = async () => {
+      const name = document.getElementById('cameraName').value.trim();
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+
+      if (!name || !serverUrl) return alert('Please enter both name and server URL.');
+
+      startBtn.disabled = true;
+
+      try {
+        // 1. Get raw video and audio stream
+        rawStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true
+        });
+        
+        rawVideo.srcObject = rawStream;
+
+        // 2. Start rendering loop with Timestamp Overlay
+        renderVideoWithTimestamp();
+
+        // 3. Capture the stamped canvas as a media stream at 30fps
+        const canvasStream = streamCanvas.captureStream(30);
+
+        // Combine canvas video track with original audio track
+        const audioTrack = rawStream.getAudioTracks()[0];
+        if (audioTrack) {
+          canvasStream.addTrack(audioTrack);
+        }
+        processedStream = canvasStream;
+
+        // Screen Wake Lock
+        if ('wakeLock' in navigator) {
+          try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        }
+
+        connectWebSocket(serverUrl, name);
+        startMotionDetection();
+        stealthBtn.style.display = 'block';
+
+      } catch (err) {
+        alert('Could not access camera/microphone: ' + err.message);
+        startBtn.disabled = false;
+      }
+    };
+
+    // Continuous loop drawing camera frames + timestamp
+    function renderVideoWithTimestamp() {
+      if (rawVideo.readyState >= rawVideo.HAVE_CURRENT_DATA) {
+        // Draw video frame to canvas
+        canvasCtx.drawImage(rawVideo, 0, 0, streamCanvas.width, streamCanvas.height);
+
+        // Format Date and Time String
+        const now = new Date();
+        const dateStr = now.toLocaleDateString();
+        const timeStr = now.toLocaleTimeString();
+        const timeStampText = `${dateStr}  ${timeStr}`;
+
+        // Draw dark background banner for readability
+        canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        canvasCtx.fillRect(20, 20, 380, 50);
+
+        // Draw live timestamp text
+        canvasCtx.fillStyle = '#34c759'; // Neon green accent
+        canvasCtx.font = 'bold 24px monospace';
+        canvasCtx.fillText(timeStampText, 35, 53);
+      }
+      requestAnimationFrame(renderVideoWithTimestamp);
+    }
+
+    function enterStealthMode() {
+      stealthOverlay.style.display = 'block';
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    }
+
+    function exitStealthMode() {
+      stealthOverlay.style.display = 'none';
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function connectWebSocket(url, name) {
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        statusDiv.innerText = 'Status: Connected & Live';
+        statusDiv.classList.add('active');
+        ws.send(JSON.stringify({ type: 'register-camera', id: cameraId, name }));
+      };
+
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === 'offer') {
+          await handleOffer(msg.senderId, msg.offer);
+        } else if (msg.type === 'candidate') {
+          if (peerConnections[msg.senderId]) {
+            await peerConnections[msg.senderId].addIceCandidate(new RTCIceCandidate(msg.candidate));
+          }
+        }
+      };
+
+      ws.onclose = () => {
+        statusDiv.innerText = 'Status: Reconnecting...';
+        statusDiv.classList.remove('active');
+        setTimeout(() => connectWebSocket(url, name), 3000);
+      };
+    }
+
+    async function handleOffer(viewerId, offer) {
+      const pc = new RTCPeerConnection(rtcConfig);
+      peerConnections[viewerId] = pc;
+
+      // Stream the PROCESSED stream (video + timestamp overlay) over WebRTC
+      processedStream.getTracks().forEach(track => pc.addTrack(track, processedStream));
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          ws.send(JSON.stringify({ type: 'candidate', targetId: viewerId, candidate: e.candidate }));
+        }
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      ws.send(JSON.stringify({ type: 'answer', targetId: viewerId, answer }));
+    }
+
+    function startMotionDetection() {
+      const canvas = document.getElementById('motionCanvas');
+      const ctx = canvas.getContext('2d');
+      let prevFrame = null;
+
+      setInterval(() => {
+        if (!processedStream || ws?.readyState !== WebSocket.OPEN) return;
+
+        ctx.drawImage(streamCanvas, 0, 0, 64, 64);
+        const currentFrame = ctx.getImageData(0, 0, 64, 64).data;
+
+        if (prevFrame) {
+          let diff = 0;
+          for (let i = 0; i < currentFrame.length; i += 4) {
+            const rDiff = Math.abs(currentFrame[i] - prevFrame[i]);
+            const gDiff = Math.abs(currentFrame[i+1] - prevFrame[i+1]);
+            const bDiff = Math.abs(currentFrame[i+2] - prevFrame[i+2]);
+            if (rDiff + gDiff + bDiff > 100) diff++;
+          }
+
+          if (diff > (64 * 64 * 0.10)) {
+            ws.send(JSON.stringify({ type: 'motion-alert', cameraId }));
+            triggerMotionRecording();
+          }
+        }
+        prevFrame = currentFrame;
+      }, 500);
+    }
+
+    function triggerMotionRecording() {
+      if (!isRecording) {
+        startRecording();
+      }
+
+      clearTimeout(recordingTimeout);
+      recordingTimeout = setTimeout(() => {
+        stopRecording();
+      }, 10000);
+    }
+
+    function startRecording() {
+      isRecording = true;
+      recordedChunks = [];
+      recordingBadge.style.display = 'inline-block';
+
+      const options = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? { mimeType: 'video/webm;codecs=vp9,opus' }
+        : { mimeType: 'video/mp4' };
+
+      try {
+        // Record the PROCESSED stream (includes timestamp)
+        mediaRecorder = new MediaRecorder(processedStream, options);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = saveRecordedClip;
+        mediaRecorder.start(1000);
+      } catch (e) {
+        console.error('MediaRecorder error:', e);
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        isRecording = false;
+        recordingBadge.style.display = 'none';
+        mediaRecorder.stop();
+      }
+    }
+
+    function saveRecordedClip() {
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toLocaleTimeString();
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `clip-${Date.now()}.webm`;
+      link.innerText = `🎥 Clip with Timestamp (${timestamp})`;
+      link.style.display = 'block';
+      link.style.color = '#34c759';
+      link.style.marginTop = '10px';
+      
+      document.querySelector('.card').appendChild(link);
+    }
+  </script>
+</body>
+</html>
