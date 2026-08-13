@@ -30,8 +30,8 @@
 
     /* Zoom & Pan Container */
     .video-viewport { width: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; position: relative; touch-action: none; }
-    video { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; transition: transform 0.05s ease-out; }
-    
+    video { width: 100%; height: 100%; object-fit: contain; display: block; transform-origin: center center; transition: transform 0.05s ease-out; }
+   
     .cam-header { padding: 8px 12px; background: #252525; display: flex; justify-content: space-between; align-items: center; }
     .cam-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
     .status-dot { width: 8px; height: 8px; background: #34c759; border-radius: 50%; display: inline-block; }
