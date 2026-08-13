@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CCTV - Camera Node (1080p Full HD)</title>
+  <title>CCTV - Camera Node (Auto-Reconnect)</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; text-align: center; }
@@ -36,7 +36,7 @@
   <div id="stealthOverlay" onclick="exitStealthMode()"></div>
 
   <div class="card">
-    <h2>Camera Node (1080p Full HD)</h2>
+    <h2>Camera Node (Auto-Reconnect)</h2>
     <input type="text" id="cameraName" placeholder="Camera Name" value="Front Door">
     <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
     <button id="startBtn">Start Camera</button>
@@ -45,7 +45,6 @@
     <div id="recordingBadge" class="recording-badge">REC - MOTION DETECTED</div>
     
     <video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
-    <!-- Full HD 1080p Canvas -->
     <canvas id="streamCanvas" class="preview-canvas" width="1920" height="1080"></canvas>
     
     <div id="status" class="status">Status: Disconnected</div>
@@ -63,6 +62,7 @@
     let processedStream = null;
     let peerConnections = {};
     let wakeLock = null;
+    let pingInterval = null;
 
     let mediaRecorder = null;
     let recordedChunks = [];
@@ -89,13 +89,8 @@
       startBtn.disabled = true;
 
       try {
-        // Request 1080p Full HD Video Stream
         rawStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: { ideal: 'environment' }, 
-            width: { ideal: 1920 }, 
-            height: { ideal: 1080 } 
-          },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: true
         });
         
@@ -133,11 +128,9 @@
         const timeStr = now.toLocaleTimeString();
         const timeStampText = `${dateStr}  ${timeStr}`;
 
-        // Scaled dark overlay banner for 1080p
         canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         canvasCtx.fillRect(25, 25, 450, 60);
 
-        // Scaled font size for 1080p
         canvasCtx.fillStyle = '#34c759';
         canvasCtx.font = 'bold 32px monospace';
         canvasCtx.fillText(timeStampText, 40, 67);
@@ -163,9 +156,17 @@
       ws = new WebSocket(url);
 
       ws.onopen = () => {
-        statusDiv.innerText = 'Status: Connected & Live';
+        statusDiv.innerText = 'Status: Connected & Live 24/7';
         statusDiv.classList.add('active');
         ws.send(JSON.stringify({ type: 'register-camera', id: cameraId, name }));
+
+        // Start Keep-Alive Ping every 20 seconds to prevent Render idle timeouts
+        clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 20000);
       };
 
       ws.onmessage = async (event) => {
@@ -181,13 +182,25 @@
       };
 
       ws.onclose = () => {
-        statusDiv.innerText = 'Status: Reconnecting...';
+        statusDiv.innerText = 'Status: Connection Lost. Reconnecting in 3s...';
         statusDiv.classList.remove('active');
+        clearInterval(pingInterval);
+
+        // Auto-reconnect loop
         setTimeout(() => connectWebSocket(url, name), 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
       };
     }
 
     async function handleOffer(viewerId, offer) {
+      // Close old peer connection if re-negotiating
+      if (peerConnections[viewerId]) {
+        peerConnections[viewerId].close();
+      }
+
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnections[viewerId] = pc;
 
