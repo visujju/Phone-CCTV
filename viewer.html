@@ -2,38 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CCTV - Advanced Viewer Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>CCTV - Viewer Dashboard</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#121212">
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
     
-    /* Header Controls */
     .header { max-width: 1200px; margin: 0 auto 15px auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: #1e1e1e; padding: 12px; border-radius: 10px; }
     .connection-box { display: flex; gap: 8px; flex: 1; min-width: 280px; }
     input { background: #2a2a2a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; flex: 1; font-size: 14px; }
     button { background: #007aff; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     button.connected { background: #34c759; }
 
-    /* Layout Switcher Bar */
     .controls-bar { max-width: 1200px; margin: 0 auto 15px auto; display: flex; gap: 8px; justify-content: flex-end; }
     .layout-btn { background: #2a2a2a; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; color: #ccc; font-size: 13px; cursor: pointer; }
     .layout-btn.active { background: #007aff; color: #fff; border-color: #007aff; }
 
-    /* Dynamic Camera Grid */
     .grid { display: grid; gap: 15px; max-width: 1200px; margin: 0 auto; transition: all 0.3s ease; }
     .grid.grid-auto { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
     .grid.grid-1x1 { grid-template-columns: 1fr; }
     .grid.grid-2x1 { grid-template-columns: repeat(auto-fit, minmax(45%, 1fr)); }
 
-    /* Camera Card Styling */
     .cam-card { background: #1e1e1e; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #2a2a2a; }
     .cam-card.motion { border-color: #ff3b30; animation: pulse 1s infinite alternate; }
-    video { width: 100%; aspect-ratio: 16/9; background: #000; object-fit: cover; display: block; }
+
+    /* Zoom & Pan Container */
+    .video-viewport { width: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; position: relative; touch-action: none; }
+    video { width: 100%; height: 100%; object-fit: cover; display: block; transform-origin: center center; transition: transform 0.05s ease-out; }
     
-    /* On-Screen Camera Control Overlay Bar */
     .cam-header { padding: 8px 12px; background: #252525; display: flex; justify-content: space-between; align-items: center; }
     .cam-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
     .status-dot { width: 8px; height: 8px; background: #34c759; border-radius: 50%; display: inline-block; }
@@ -42,7 +40,6 @@
     .action-btn { background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; flex: 1; min-width: 70px; text-align: center; }
     .action-btn:hover { background: #444; }
 
-    /* Playback & Snapshot Section */
     .playback-section { max-width: 1200px; margin: 25px auto 0 auto; background: #1e1e1e; padding: 15px; border-radius: 10px; }
     .playback-section h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 8px; }
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
@@ -62,7 +59,6 @@
 </head>
 <body>
 
-  <!-- Top Connection Bar -->
   <div class="header">
     <div class="connection-box">
       <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
@@ -70,7 +66,6 @@
     </div>
   </div>
 
-  <!-- Layout Switcher Bar -->
   <div class="controls-bar">
     <span style="font-size: 12px; color: #aaa; align-self: center; margin-right: 5px;">Layout:</span>
     <button class="layout-btn active" onclick="setLayout('grid-auto', this)">Grid</button>
@@ -78,14 +73,12 @@
     <button class="layout-btn" onclick="setLayout('grid-1x1', this)">1x1 Focus</button>
   </div>
 
-  <!-- Live Multi-Camera Grid -->
   <div id="grid" class="grid grid-auto"></div>
 
-  <!-- Snapshot Gallery / Playback Storage -->
   <div class="playback-section">
     <h3>📸 Gallery & Playback Snapshots</h3>
     <div id="gallery" class="gallery-grid">
-      <span style="color:#777; font-size: 12px; grid-column: 1/-1;">No snapshots taken yet. Tap 📸 Snapshot on any camera feed.</span>
+      <span style="color:#777; font-size: 12px; grid-column: 1/-1;">No snapshots taken yet. Tap 📸 Photo on any camera feed.</span>
     </div>
   </div>
 
@@ -182,17 +175,89 @@
         <div class="cam-header">
           <div class="cam-title"><span class="status-dot"></span> ${name}</div>
         </div>
-        <video id="video-${id}" autoplay playsinline muted></video>
+        <div class="video-viewport" id="viewport-${id}">
+          <video id="video-${id}" autoplay playsinline muted></video>
+        </div>
         <div class="cam-toolbar">
           <button class="action-btn" onclick="toggleMute('video-${id}', this)">🔇 Unmute</button>
           <button class="action-btn" onclick="takeSnapshot('video-${id}', '${name}')">📸 Photo</button>
+          <button class="action-btn" onclick="resetZoom('video-${id}')">🔍 Reset Zoom</button>
           <button class="action-btn" onclick="toggleFullScreen('video-${id}')">⛶ Full</button>
         </div>
       `;
       grid.appendChild(card);
+
+      // Attach Pinch-to-Zoom & Pan Gesture Handler
+      setupPinchZoom(`viewport-${id}`, `video-${id}`);
     }
 
-    // Audio Mute / Unmute Toggle
+    // Touch Gesture Logic for Pinch-to-Zoom and Drag-Pan
+    function setupPinchZoom(viewportId, videoId) {
+      const viewport = document.getElementById(viewportId);
+      const video = document.getElementById(videoId);
+
+      let scale = 1;
+      let pointX = 0;
+      let pointY = 0;
+      let startX = 0;
+      let startY = 0;
+      let initialDist = 0;
+      let lastTap = 0;
+
+      function updateTransform() {
+        video.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+      }
+
+      viewport.addEventListener('touchstart', (e) => {
+        // Double Tap to Reset Zoom
+        const now = Date.now();
+        if (e.touches.length === 1 && now - lastTap < 300) {
+          scale = 1; pointX = 0; pointY = 0;
+          updateTransform();
+          return;
+        }
+        lastTap = now;
+
+        if (e.touches.length === 2) {
+          // Calculate initial pinch distance
+          initialDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        } else if (e.touches.length === 1 && scale > 1) {
+          // Drag mode start when zoomed in
+          startX = e.touches[0].clientX - pointX;
+          startY = e.touches[0].clientY - pointY;
+        }
+      });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+          // Pinch Zooming
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const factor = dist / initialDist;
+          scale = Math.min(Math.max(1, scale * factor), 4); // Max 4x zoom
+          initialDist = dist;
+          updateTransform();
+        } else if (e.touches.length === 1 && scale > 1) {
+          // Dragging / Panning
+          pointX = e.touches[0].clientX - startX;
+          pointY = e.touches[0].clientY - startY;
+          updateTransform();
+        }
+      });
+    }
+
+    function resetZoom(videoId) {
+      const video = document.getElementById(videoId);
+      if (video) {
+        video.style.transform = 'translate(0px, 0px) scale(1)';
+      }
+    }
+
     function toggleMute(videoId, btn) {
       const video = document.getElementById(videoId);
       if (video) {
@@ -201,7 +266,6 @@
       }
     }
 
-    // Capture High-Res Snapshot
     function takeSnapshot(videoId, camName) {
       const video = document.getElementById(videoId);
       if (!video) return;
@@ -215,7 +279,6 @@
       const dataUrl = canvas.toDataURL('image/jpeg');
       const gallery = document.getElementById('gallery');
       
-      // Clear placeholder text on first image
       if (gallery.querySelector('span')) gallery.innerHTML = '';
 
       const time = new Date().toLocaleTimeString();
@@ -230,14 +293,12 @@
       gallery.prepend(item);
     }
 
-    // Layout Switcher Function
     function setLayout(layoutClass, btn) {
       grid.className = `grid ${layoutClass}`;
       document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
 
-    // Fullscreen Toggle Function
     function toggleFullScreen(videoId) {
       const videoElem = document.getElementById(videoId);
       if (!videoElem) return;
