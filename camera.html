@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CCTV - Camera Node with Timestamp</title>
+  <title>CCTV - Camera Node (1080p Full HD)</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; text-align: center; }
@@ -36,7 +36,7 @@
   <div id="stealthOverlay" onclick="exitStealthMode()"></div>
 
   <div class="card">
-    <h2>Camera Node (Timestamp Overlay)</h2>
+    <h2>Camera Node (1080p Full HD)</h2>
     <input type="text" id="cameraName" placeholder="Camera Name" value="Front Door">
     <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
     <button id="startBtn">Start Camera</button>
@@ -44,11 +44,9 @@
     
     <div id="recordingBadge" class="recording-badge">REC - MOTION DETECTED</div>
     
-    <!-- Hidden raw video element -->
     <video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
-    
-    <!-- Canvas where video + timestamp are composite-rendered -->
-    <canvas id="streamCanvas" class="preview-canvas" width="1280" height="720"></canvas>
+    <!-- Full HD 1080p Canvas -->
+    <canvas id="streamCanvas" class="preview-canvas" width="1920" height="1080"></canvas>
     
     <div id="status" class="status">Status: Disconnected</div>
   </div>
@@ -91,28 +89,27 @@
       startBtn.disabled = true;
 
       try {
-        // 1. Get raw video and audio stream
+        // Request 1080p Full HD Video Stream
         rawStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { 
+            facingMode: { ideal: 'environment' }, 
+            width: { ideal: 1920 }, 
+            height: { ideal: 1080 } 
+          },
           audio: true
         });
         
         rawVideo.srcObject = rawStream;
-
-        // 2. Start rendering loop with Timestamp Overlay
         renderVideoWithTimestamp();
 
-        // 3. Capture the stamped canvas as a media stream at 30fps
-        const canvasStream = streamCanvas.captureStream(30);
-
-        // Combine canvas video track with original audio track
-        const audioTrack = rawStream.getAudioTracks()[0];
-        if (audioTrack) {
-          canvasStream.addTrack(audioTrack);
+        try {
+          processedStream = streamCanvas.captureStream(30);
+          const audioTrack = rawStream.getAudioTracks()[0];
+          if (audioTrack) processedStream.addTrack(audioTrack);
+        } catch (e) {
+          processedStream = rawStream;
         }
-        processedStream = canvasStream;
 
-        // Screen Wake Lock
         if ('wakeLock' in navigator) {
           try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
         }
@@ -127,26 +124,23 @@
       }
     };
 
-    // Continuous loop drawing camera frames + timestamp
     function renderVideoWithTimestamp() {
       if (rawVideo.readyState >= rawVideo.HAVE_CURRENT_DATA) {
-        // Draw video frame to canvas
         canvasCtx.drawImage(rawVideo, 0, 0, streamCanvas.width, streamCanvas.height);
 
-        // Format Date and Time String
         const now = new Date();
         const dateStr = now.toLocaleDateString();
         const timeStr = now.toLocaleTimeString();
         const timeStampText = `${dateStr}  ${timeStr}`;
 
-        // Draw dark background banner for readability
+        // Scaled dark overlay banner for 1080p
         canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        canvasCtx.fillRect(20, 20, 380, 50);
+        canvasCtx.fillRect(25, 25, 450, 60);
 
-        // Draw live timestamp text
-        canvasCtx.fillStyle = '#34c759'; // Neon green accent
-        canvasCtx.font = 'bold 24px monospace';
-        canvasCtx.fillText(timeStampText, 35, 53);
+        // Scaled font size for 1080p
+        canvasCtx.fillStyle = '#34c759';
+        canvasCtx.font = 'bold 32px monospace';
+        canvasCtx.fillText(timeStampText, 40, 67);
       }
       requestAnimationFrame(renderVideoWithTimestamp);
     }
@@ -197,7 +191,6 @@
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnections[viewerId] = pc;
 
-      // Stream the PROCESSED stream (video + timestamp overlay) over WebRTC
       processedStream.getTracks().forEach(track => pc.addTrack(track, processedStream));
 
       pc.onicecandidate = (e) => {
@@ -263,7 +256,6 @@
         : { mimeType: 'video/mp4' };
 
       try {
-        // Record the PROCESSED stream (includes timestamp)
         mediaRecorder = new MediaRecorder(processedStream, options);
 
         mediaRecorder.ondataavailable = (event) => {
