@@ -3,43 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CCTV - Viewer Dashboard</title>
+  <title>CCTV - Advanced Viewer Dashboard</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#121212">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; }
-    .header { max-width: 1200px; margin: 0 auto 20px auto; display: flex; gap: 10px; align-items: center; }
-    input, button { padding: 10px; border-radius: 6px; border: 1px solid #333; font-size: 15px; }
-    input { background: #2a2a2a; color: #fff; flex: 1; }
-    button { background: #34c759; color: white; border: none; font-weight: bold; cursor: pointer; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
+    
+    /* Header Controls */
+    .header { max-width: 1200px; margin: 0 auto 15px auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: #1e1e1e; padding: 12px; border-radius: 10px; }
+    .connection-box { display: flex; gap: 8px; flex: 1; min-width: 280px; }
+    input { background: #2a2a2a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; flex: 1; font-size: 14px; }
+    button { background: #007aff; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    button.connected { background: #34c759; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; max-width: 1200px; margin: 0 auto; }
-    .cam-card { background: #1e1e1e; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid transparent; transition: border-color 0.3s; }
+    /* Layout Switcher Bar */
+    .controls-bar { max-width: 1200px; margin: 0 auto 15px auto; display: flex; gap: 8px; justify-content: flex-end; }
+    .layout-btn { background: #2a2a2a; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; color: #ccc; font-size: 13px; cursor: pointer; }
+    .layout-btn.active { background: #007aff; color: #fff; border-color: #007aff; }
+
+    /* Dynamic Camera Grid */
+    .grid { display: grid; gap: 15px; max-width: 1200px; margin: 0 auto; transition: all 0.3s ease; }
+    .grid.grid-auto { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .grid.grid-1x1 { grid-template-columns: 1fr; }
+    .grid.grid-2x1 { grid-template-columns: repeat(auto-fit, minmax(45%, 1fr)); }
+
+    /* Camera Card Styling */
+    .cam-card { background: #1e1e1e; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #2a2a2a; }
     .cam-card.motion { border-color: #ff3b30; animation: pulse 1s infinite alternate; }
+    video { width: 100%; aspect-ratio: 16/9; background: #000; object-fit: cover; display: block; }
     
-    /* Interactive Video Feed Styling */
-    video { width: 100%; aspect-ratio: 16/9; background: #000; object-fit: cover; display: block; cursor: pointer; }
+    /* On-Screen Camera Control Overlay Bar */
+    .cam-header { padding: 8px 12px; background: #252525; display: flex; justify-content: space-between; align-items: center; }
+    .cam-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background: #34c759; border-radius: 50%; display: inline-block; }
     
-    /* Native Fullscreen Styling Override */
-    video:-webkit-full-screen { object-fit: contain; width: 100%; height: 100%; background: #000; }
-    video:fullscreen { object-fit: contain; width: 100%; height: 100%; background: #000; }
+    .cam-toolbar { display: flex; gap: 6px; padding: 8px 12px; background: #1a1a1a; flex-wrap: wrap; justify-content: space-between; }
+    .action-btn { background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; flex: 1; min-width: 70px; text-align: center; }
+    .action-btn:hover { background: #444; }
 
-    .cam-title { padding: 10px; font-weight: 600; font-size: 14px; background: #252525; display: flex; justify-content: space-between; align-items: center; }
-    .fullscreen-btn { background: #007aff; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-    
+    /* Playback & Snapshot Section */
+    .playback-section { max-width: 1200px; margin: 25px auto 0 auto; background: #1e1e1e; padding: 15px; border-radius: 10px; }
+    .playback-section h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+    .gallery-item { background: #2a2a2a; padding: 6px; border-radius: 6px; text-align: center; font-size: 11px; }
+    .gallery-item img { width: 100%; border-radius: 4px; aspect-ratio: 16/9; object-fit: cover; }
+
     @keyframes pulse {
       from { box-shadow: 0 0 5px rgba(255, 59, 48, 0.4); }
       to { box-shadow: 0 0 20px rgba(255, 59, 48, 1); }
     }
   </style>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </head>
 <body>
 
+  <!-- Top Connection Bar -->
   <div class="header">
-    <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
-    <button id="connectBtn">Connect Dashboard</button>
+    <div class="connection-box">
+      <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
+      <button id="connectBtn">Connect</button>
+    </div>
   </div>
 
-  <div id="grid" class="grid"></div>
+  <!-- Layout Switcher Bar -->
+  <div class="controls-bar">
+    <span style="font-size: 12px; color: #aaa; align-self: center; margin-right: 5px;">Layout:</span>
+    <button class="layout-btn active" onclick="setLayout('grid-auto', this)">Grid</button>
+    <button class="layout-btn" onclick="setLayout('grid-2x1', this)">2x1</button>
+    <button class="layout-btn" onclick="setLayout('grid-1x1', this)">1x1 Focus</button>
+  </div>
+
+  <!-- Live Multi-Camera Grid -->
+  <div id="grid" class="grid grid-auto"></div>
+
+  <!-- Snapshot Gallery / Playback Storage -->
+  <div class="playback-section">
+    <h3>📸 Gallery & Playback Snapshots</h3>
+    <div id="gallery" class="gallery-grid">
+      <span style="color:#777; font-size: 12px; grid-column: 1/-1;">No snapshots taken yet. Tap 📸 Snapshot on any camera feed.</span>
+    </div>
+  </div>
 
   <script>
     const defaultWsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -53,18 +101,6 @@
     const connectBtn = document.getElementById('connectBtn');
     const grid = document.getElementById('grid');
 
-    function playBeep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
-      } catch(e) {}
-    }
-
     connectBtn.onclick = () => {
       const serverUrl = document.getElementById('serverUrl').value.trim();
       if (!serverUrl) return alert('Enter server URL.');
@@ -74,6 +110,7 @@
 
       ws.onopen = () => {
         connectBtn.innerText = 'Connected';
+        connectBtn.classList.add('connected');
         ws.send(JSON.stringify({ type: 'register-viewer', id: viewerId }));
       };
 
@@ -127,7 +164,7 @@
         }
       };
 
-      const offer = await pc.createOffer({ offerToReceiveVideo: true });
+      const offer = await pc.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
       await pc.setLocalDescription(offer);
 
       ws.send(JSON.stringify({
@@ -142,34 +179,76 @@
       card.className = 'cam-card';
       card.id = `card-${id}`;
       card.innerHTML = `
-        <video id="video-${id}" autoplay playsinline muted onclick="toggleFullScreen('video-${id}')"></video>
-        <div class="cam-title">
-          <span>${name}</span>
-          <button class="fullscreen-btn" onclick="toggleFullScreen('video-${id}')">⛶ Fullscreen</button>
+        <div class="cam-header">
+          <div class="cam-title"><span class="status-dot"></span> ${name}</div>
+        </div>
+        <video id="video-${id}" autoplay playsinline muted></video>
+        <div class="cam-toolbar">
+          <button class="action-btn" onclick="toggleMute('video-${id}', this)">🔇 Unmute</button>
+          <button class="action-btn" onclick="takeSnapshot('video-${id}', '${name}')">📸 Photo</button>
+          <button class="action-btn" onclick="toggleFullScreen('video-${id}')">⛶ Full</button>
         </div>
       `;
       grid.appendChild(card);
     }
 
-    // Fullscreen Toggle Logic supporting iOS Safari & Android Chrome
+    // Audio Mute / Unmute Toggle
+    function toggleMute(videoId, btn) {
+      const video = document.getElementById(videoId);
+      if (video) {
+        video.muted = !video.muted;
+        btn.innerText = video.muted ? '🔇 Unmute' : '🔊 Mute';
+      }
+    }
+
+    // Capture High-Res Snapshot
+    function takeSnapshot(videoId, camName) {
+      const video = document.getElementById(videoId);
+      if (!video) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      const gallery = document.getElementById('gallery');
+      
+      // Clear placeholder text on first image
+      if (gallery.querySelector('span')) gallery.innerHTML = '';
+
+      const time = new Date().toLocaleTimeString();
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.innerHTML = `
+        <img src="${dataUrl}">
+        <div style="margin-top:4px;">${camName}</div>
+        <div style="color:#888;">${time}</div>
+        <a href="${dataUrl}" download="${camName}-${Date.now()}.jpg" style="color:#007aff; text-decoration:none;">Download</a>
+      `;
+      gallery.prepend(item);
+    }
+
+    // Layout Switcher Function
+    function setLayout(layoutClass, btn) {
+      grid.className = `grid ${layoutClass}`;
+      document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    // Fullscreen Toggle Function
     function toggleFullScreen(videoId) {
       const videoElem = document.getElementById(videoId);
       if (!videoElem) return;
 
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (videoElem.requestFullscreen) {
-          videoElem.requestFullscreen();
-        } else if (videoElem.webkitRequestFullscreen) { /* Safari / iOS */
-          videoElem.webkitRequestFullscreen();
-        } else if (videoElem.webkitEnterFullscreen) { /* iPhone Native Video Player fallback */
-          videoElem.webkitEnterFullscreen();
-        }
+        if (videoElem.requestFullscreen) videoElem.requestFullscreen();
+        else if (videoElem.webkitRequestFullscreen) videoElem.webkitRequestFullscreen();
+        else if (videoElem.webkitEnterFullscreen) videoElem.webkitEnterFullscreen();
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       }
     }
 
@@ -185,7 +264,6 @@
       const card = document.getElementById(`card-${id}`);
       if (card) {
         card.classList.add('motion');
-        playBeep();
         setTimeout(() => card.classList.remove('motion'), 2000);
       }
     }
