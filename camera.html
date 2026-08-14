@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CCTV - Camera Node (Cooling Optimized)</title>
+  <title>CCTV - Camera Node (Auto Night Vision)</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; text-align: center; }
@@ -12,6 +12,7 @@
     input { background: #2a2a2a; color: #fff; }
     button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; }
     .stealth-btn { background: #34c759; margin-top: 10px; }
+    .night-indicator { display: inline-block; background: #5856d6; color: #fff; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; margin: 8px 0; }
     button:disabled { background: #444; }
     video, canvas.preview-canvas { width: 100%; border-radius: 8px; margin-top: 15px; background: #000; }
     .status { margin-top: 10px; font-size: 14px; color: #aaa; }
@@ -36,16 +37,17 @@
   <div id="stealthOverlay" onclick="exitStealthMode()"></div>
 
   <div class="card">
-    <h2>Camera Node (Low Thermal)</h2>
+    <h2>Camera Node</h2>
     <input type="text" id="cameraName" placeholder="Camera Name" value="Front Door">
     <input type="text" id="serverUrl" placeholder="wss://your-app.onrender.com">
     <button id="startBtn">Start Camera</button>
+    
+    <div id="nightIndicator" class="night-indicator" style="display: none;">☀️ Mode: Daylight</div>
     <button id="stealthBtn" class="stealth-btn" style="display: none;" onclick="enterStealthMode()">🕶️ Enter Black Screen (Stealth)</button>
     
     <div id="recordingBadge" class="recording-badge">REC - MOTION DETECTED</div>
     
     <video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
-    <!-- Optimized 720p Canvas for low thermal output -->
     <canvas id="streamCanvas" class="preview-canvas" width="1280" height="720"></canvas>
     
     <div id="status" class="status">Status: Disconnected</div>
@@ -64,6 +66,7 @@
     let peerConnections = {};
     let wakeLock = null;
     let pingInterval = null;
+    let isNightVision = false;
 
     let mediaRecorder = null;
     let recordedChunks = [];
@@ -74,6 +77,7 @@
 
     const startBtn = document.getElementById('startBtn');
     const stealthBtn = document.getElementById('stealthBtn');
+    const nightIndicator = document.getElementById('nightIndicator');
     const stealthOverlay = document.getElementById('stealthOverlay');
     const statusDiv = document.getElementById('status');
     const rawVideo = document.getElementById('rawVideo');
@@ -90,7 +94,6 @@
       startBtn.disabled = true;
 
       try {
-        // Request 720p stream to prevent mobile device overheating
         rawStream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: { ideal: 'environment' }, 
@@ -105,7 +108,6 @@
         renderVideoWithTimestamp();
 
         try {
-          // Cap canvas capture at 15 FPS to reduce CPU/GPU load by half
           processedStream = streamCanvas.captureStream(15);
           const audioTrack = rawStream.getAudioTracks()[0];
           if (audioTrack) processedStream.addTrack(audioTrack);
@@ -118,8 +120,9 @@
         }
 
         connectWebSocket(serverUrl, name);
-        startMotionDetection();
+        startMotionAndLightDetection();
         stealthBtn.style.display = 'block';
+        nightIndicator.style.display = 'inline-block';
 
       } catch (err) {
         alert('Could not access camera/microphone: ' + err.message);
@@ -129,7 +132,17 @@
 
     function renderVideoWithTimestamp() {
       if (rawVideo.readyState >= rawVideo.HAVE_CURRENT_DATA) {
+        // Auto-Apply Boost when dark
+        if (isNightVision) {
+          canvasCtx.filter = 'brightness(180%) contrast(160%) grayscale(80%)';
+        } else {
+          canvasCtx.filter = 'none';
+        }
+
         canvasCtx.drawImage(rawVideo, 0, 0, streamCanvas.width, streamCanvas.height);
+        
+        // Keep timestamp text clean
+        canvasCtx.filter = 'none';
 
         const now = new Date();
         const dateStr = now.toLocaleDateString();
@@ -168,7 +181,6 @@
         statusDiv.classList.add('active');
         ws.send(JSON.stringify({ type: 'register-camera', id: cameraId, name }));
 
-        // 20-second ping to maintain WebSocket connection
         clearInterval(pingInterval);
         pingInterval = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -194,7 +206,6 @@
         statusDiv.classList.remove('active');
         clearInterval(pingInterval);
 
-        // Auto-reconnect loop
         setTimeout(() => connectWebSocket(url, name), 3000);
       };
 
@@ -219,14 +230,15 @@
         }
       };
 
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await pc.setLocalDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
       ws.send(JSON.stringify({ type: 'answer', targetId: viewerId, answer }));
     }
 
-    function startMotionDetection() {
+    // Motion Detection + Automatic Light Level Sensing
+    function startMotionAndLightDetection() {
       const canvas = document.getElementById('motionCanvas');
       const ctx = canvas.getContext('2d');
       let prevFrame = null;
@@ -237,6 +249,25 @@
         ctx.drawImage(streamCanvas, 0, 0, 64, 64);
         const currentFrame = ctx.getImageData(0, 0, 64, 64).data;
 
+        // Calculate Average Luminance (Brightness)
+        let totalBrightness = 0;
+        for (let i = 0; i < currentFrame.length; i += 4) {
+          totalBrightness += (currentFrame[i] + currentFrame[i+1] + currentFrame[i+2]) / 3;
+        }
+        const avgLuminance = totalBrightness / (64 * 64);
+
+        // Auto Toggle Night Mode if brightness drops below threshold (45/255)
+        if (avgLuminance < 45 && !isNightVision) {
+          isNightVision = true;
+          nightIndicator.innerText = '🌙 Mode: Auto Night Vision (ON)';
+          nightIndicator.style.background = '#ff9500';
+        } else if (avgLuminance >= 55 && isNightVision) {
+          isNightVision = false;
+          nightIndicator.innerText = '☀️ Mode: Daylight';
+          nightIndicator.style.background = '#5856d6';
+        }
+
+        // Motion Detection logic
         if (prevFrame) {
           let diff = 0;
           for (let i = 0; i < currentFrame.length; i += 4) {
