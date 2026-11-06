@@ -1,8 +1,16 @@
-# StreamHub TV Android APK
+# StreamHub TV Android app
 
-StreamHub is packaged as a native Android WebView app for Android TV and Android phones. The app ships its UI in `android/app/src/main/assets/streamhub/`; no PWA manifest or service worker is used.
+StreamHub is shipped as a native Android APK with its launcher UI bundled inside the app. It is not a PWA: there is no web app manifest or service worker.
 
-## Build an installable debug APK
+The Android app uses a fullscreen WebView for the launcher and opens a selected streaming destination directly in that WebView. TV remote D-pad keys are mapped to launcher navigation, the Back key returns through site history to the home screen, and an auto-hiding native toolbar provides Back, Reload, and Open in browser controls.
+
+## APK build
+
+A push to the active Arena branch runs `.github/workflows/android-apk.yml`. The workflow builds a debug-signed APK and publishes it to the public GitHub release named **StreamHub TV Browser APK 1.0.1**.
+
+The APK is intended for Android/Android TV sideload testing. It is not signed for Google Play distribution.
+
+## Local build
 
 Requirements: JDK 17, Android SDK platform 35, and Gradle 8.9.
 
@@ -10,10 +18,4 @@ Requirements: JDK 17, Android SDK platform 35, and Gradle 8.9.
 gradle -p android assembleDebug
 ```
 
-The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. It is debug-signed for testing/sideloading; it is not a Play Store release signature.
-
-A GitHub Actions workflow builds this APK for the active branch and attaches it to the public **StreamHub TV Browser APK** GitHub release.
-
-## Install
-
-On Android, download and open the APK, then allow installation from the browser/file manager if Android asks. On Android TV, transfer the APK to the TV and sideload it. The app is fullscreen, landscape, supports D-pad navigation, and opens external streaming destinations in the browser when requested.
+Output: `android/app/build/outputs/apk/debug/app-debug.apk`.
