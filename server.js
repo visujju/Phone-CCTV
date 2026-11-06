@@ -5,23 +5,28 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 
-// HTTP Server to serve camera.html, viewer.html, and root redirect
+// Serve the StreamHub launcher at the root while preserving CCTV routes.
 const server = http.createServer((req, res) => {
+  const pathname = new URL(req.url, 'http://localhost').pathname;
   let filePath = '.';
-  if (req.url === '/' || req.url === '/viewer') {
+  if (pathname === '/' || pathname === '/viewer') {
     filePath = './viewer.html';
-  } else if (req.url === '/camera') {
+  } else if (pathname === '/camera') {
     filePath = './camera.html';
   } else {
-    filePath = '.' + req.url;
+    filePath = '.' + decodeURIComponent(pathname);
   }
 
   const extname = String(path.extname(filePath)).toLowerCase();
   const mimeTypes = {
-    '.html': 'text/html',
-    '.js': 'text/javascript',
-    '.css': 'text/css',
-    '.json': 'application/json'
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.webp': 'image/webp'
   };
 
   const contentType = mimeTypes[extname] || 'application/octet-stream';
