@@ -3,14 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#08080d">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="StreamHub is your TV-ready home for streaming. Browse, launch, and enjoy your favorite entertainment from one place.">
-  <meta property="og:title" content="StreamHub — TV Browser"><meta property="og:description" content="Your entertainment, all in one place."><meta property="og:type" content="website"><meta property="og:image" content="/assets/streamhub-wide.png">
-  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="StreamHub — TV Browser"><meta name="twitter:image" content="/assets/streamhub-wide.png">
-  <link rel="manifest" href="/manifest.json"><link rel="icon" href="/assets/favicon-32.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://cinejoy.pk" crossorigin><link rel="preconnect" href="https://www.lookmovie2.to" crossorigin><link rel="preconnect" href="https://net79.cc" crossorigin><link rel="preconnect" href="https://primeshows.org" crossorigin><link rel="preconnect" href="https://watch.plex.tv" crossorigin><link rel="preconnect" href="https://www.filmzie.com" crossorigin><link rel="preconnect" href="https://www.crunchyroll.com" crossorigin><link rel="preconnect" href="https://www.viki.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -119,7 +112,7 @@ document.addEventListener('keydown',keyHandler);
 let pointer=false;document.addEventListener('mousemove',()=>{pointer=true;document.body.classList.remove('cursor-hidden');clearTimeout(mouseTimer);mouseTimer=setTimeout(()=>{if(pointer)document.body.classList.add('cursor-hidden')},2500)});document.addEventListener('keydown',()=>{document.body.classList.remove('cursor-hidden');clearTimeout(mouseTimer)});
 window.addEventListener('popstate',()=>{if($('#viewer').classList.contains('open'))closeViewer();else closeOverlay()});history.pushState({streamhub:true},'','#home');
 const params=new URLSearchParams(location.search),openId=params.get('open');if(openId&&siteById(openId))setTimeout(()=>launchSite(siteById(openId)),250);
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
 })();
 </script>
 </body></html>
