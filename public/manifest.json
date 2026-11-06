@@ -1,0 +1,101 @@
+{
+  "name": "StreamHub — TV Browser",
+  "short_name": "StreamHub",
+  "description": "Premium D-pad navigable streaming launcher for smart TVs, Android TV and Fire TV.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "landscape",
+  "background_color": "#07060f",
+  "theme_color": "#07060f",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["entertainment", "video", "tv", "multimedia"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-1024-maskable.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "StreamHub home screen on a TV"
+    },
+    {
+      "src": "/screenshots/narrow.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "StreamHub on a portrait screen"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "CineJoy",
+      "short_name": "CineJoy",
+      "description": "Cinema — movies, PK, 1080p",
+      "url": "/?open=cinejoy",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "LookMovie",
+      "short_name": "LookMovie",
+      "description": "Movies & TV free HD",
+      "url": "/?open=lookmovie",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Net27",
+      "short_name": "Net27",
+      "description": "Live TV & on-demand",
+      "url": "/?open=net27",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "PrimeShows",
+      "short_name": "PrimeShows",
+      "description": "Premium series library (opens externally)",
+      "url": "/?open=primeshows",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

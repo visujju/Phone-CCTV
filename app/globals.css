@@ -1,0 +1,439 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Theme tokens — each theme overrides ~17 CSS custom properties      */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --background: oklch(0.08 0.008 280);
+  --card: oklch(0.13 0.01 280);
+  --card-2: oklch(0.17 0.012 280);
+  --foreground: oklch(0.97 0.005 60);
+  --muted-foreground: oklch(0.64 0.01 270);
+  --primary: oklch(0.78 0.16 65);
+  --primary-foreground: oklch(0.16 0.02 60);
+  --secondary: oklch(0.18 0.012 280);
+  --accent: oklch(0.78 0.16 65);
+  --accent-2: oklch(0.68 0.18 30);
+  --border: oklch(1 0 0 / 6%);
+  --ring: oklch(0.78 0.16 65);
+  --focus: oklch(0.78 0.16 65);
+  --glow: oklch(0.78 0.16 65 / 0.35);
+  --radius: 1rem;
+  --blob: oklch(0.62 0.18 55 / 0.22);
+  --vignette: oklch(0 0 0 / 0.55);
+}
+
+[data-theme="cinema"] {
+  --background: oklch(0.08 0.008 280);
+  --card: oklch(0.13 0.01 280);
+  --card-2: oklch(0.17 0.012 280);
+  --foreground: oklch(0.97 0.005 60);
+  --muted-foreground: oklch(0.64 0.01 270);
+  --primary: oklch(0.78 0.16 65);
+  --primary-foreground: oklch(0.16 0.02 60);
+  --secondary: oklch(0.18 0.012 280);
+  --accent: oklch(0.78 0.16 65);
+  --accent-2: oklch(0.68 0.18 30);
+  --border: oklch(1 0 0 / 6%);
+  --ring: oklch(0.78 0.16 65);
+  --focus: oklch(0.78 0.16 65);
+  --glow: oklch(0.78 0.16 65 / 0.35);
+  --radius: 1rem;
+  --blob: oklch(0.62 0.18 55 / 0.22);
+  --vignette: oklch(0 0 0 / 0.55);
+}
+
+[data-theme="netflix"] {
+  --background: oklch(0.045 0 0);
+  --card: oklch(0.095 0.004 20);
+  --card-2: oklch(0.14 0.006 20);
+  --foreground: oklch(0.97 0.002 20);
+  --muted-foreground: oklch(0.6 0.008 20);
+  --primary: oklch(0.55 0.235 25);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.16 0.008 20);
+  --accent: oklch(0.55 0.235 25);
+  --accent-2: oklch(0.62 0.22 18);
+  --border: oklch(1 0 0 / 7%);
+  --ring: oklch(0.55 0.235 25);
+  --focus: oklch(0.58 0.23 25);
+  --glow: oklch(0.55 0.235 25 / 0.42);
+  --radius: 0.5rem;
+  --blob: oklch(0.5 0.24 25 / 0.28);
+  --vignette: oklch(0 0 0 / 0.62);
+}
+
+[data-theme="prime"] {
+  --background: oklch(0.09 0.028 252);
+  --card: oklch(0.14 0.04 250);
+  --card-2: oklch(0.19 0.05 248);
+  --foreground: oklch(0.97 0.01 240);
+  --muted-foreground: oklch(0.66 0.03 245);
+  --primary: oklch(0.7 0.13 210);
+  --primary-foreground: oklch(0.08 0.03 250);
+  --secondary: oklch(0.2 0.05 248);
+  --accent: oklch(0.7 0.13 210);
+  --accent-2: oklch(0.76 0.11 200);
+  --border: oklch(0.7 0.13 210 / 12%);
+  --ring: oklch(0.7 0.13 210);
+  --focus: oklch(0.72 0.13 210);
+  --glow: oklch(0.7 0.13 210 / 0.4);
+  --radius: 0.75rem;
+  --blob: oklch(0.6 0.14 215 / 0.3);
+  --vignette: oklch(0.02 0.02 260 / 0.6);
+}
+
+[data-theme="disney"] {
+  --background: oklch(0.085 0.028 268);
+  --card: oklch(0.13 0.04 265);
+  --card-2: oklch(0.18 0.05 262);
+  --foreground: oklch(0.96 0.01 250);
+  --muted-foreground: oklch(0.68 0.03 260);
+  --primary: oklch(0.63 0.14 258);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.19 0.05 262);
+  --accent: oklch(0.68 0.13 275);
+  --accent-2: oklch(0.75 0.1 300);
+  --border: oklch(0.75 0.1 270 / 14%);
+  --ring: oklch(0.63 0.14 258);
+  --focus: oklch(0.68 0.14 262);
+  --glow: oklch(0.63 0.14 258 / 0.42);
+  --radius: 1rem;
+  --blob: oklch(0.55 0.15 265 / 0.3);
+  --vignette: oklch(0.02 0.02 280 / 0.55);
+}
+
+[data-theme="apple"] {
+  --background: oklch(0.03 0 0);
+  --card: oklch(0.09 0 0);
+  --card-2: oklch(0.13 0 0);
+  --foreground: oklch(0.98 0 0);
+  --muted-foreground: oklch(0.62 0 0);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.05 0 0);
+  --secondary: oklch(0.16 0 0);
+  --accent: oklch(0.98 0 0);
+  --accent-2: oklch(0.75 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --ring: oklch(0.98 0 0);
+  --focus: oklch(0.95 0 0);
+  --glow: oklch(1 0 0 / 0.22);
+  --radius: 1.25rem;
+  --blob: oklch(0.85 0 0 / 0.1);
+  --vignette: oklch(0 0 0 / 0.5);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tailwind theme mapping                                             */
+/* ------------------------------------------------------------------ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-border: var(--border);
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% -10%, var(--card), var(--background) 55%, var(--background)),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide every scrollbar — D-pad only */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* TV-style auto-hiding cursor */
+body.cursor-hidden,
+body.cursor-hidden * {
+  cursor: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Ambient background layers                                          */
+/* ------------------------------------------------------------------ */
+
+.ambient-blob {
+  position: fixed;
+  top: -20vh;
+  right: -10vw;
+  width: 70vh;
+  height: 70vh;
+  border-radius: 9999px;
+  background: var(--blob);
+  filter: blur(90px);
+  pointer-events: none;
+  animation: blob-drift 30s ease-in-out infinite alternate;
+  will-change: transform;
+  z-index: 0;
+}
+
+.ambient-blob-static {
+  position: fixed;
+  bottom: -30vh;
+  left: -15vw;
+  width: 60vh;
+  height: 60vh;
+  border-radius: 9999px;
+  background: oklch(0.35 0.12 260 / 0.16);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes blob-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-8vw, 6vh, 0) scale(1.15);
+  }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 90% at 50% 45%, transparent 55%, var(--vignette));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grain {
+  position: fixed;
+  inset: -100px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 8s steps(8) infinite;
+}
+
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  12.5% { transform: translate(-40px, 30px); }
+  25% { transform: translate(30px, -50px); }
+  37.5% { transform: translate(-50px, -20px); }
+  50% { transform: translate(40px, 40px); }
+  62.5% { transform: translate(-30px, 50px); }
+  75% { transform: translate(50px, -30px); }
+  87.5% { transform: translate(-20px, -40px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Disney+ starlight dots */
+.stars-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 22%, oklch(1 0 0 / 0.9), transparent 100%),
+    radial-gradient(1px 1px at 32% 68%, oklch(1 0 0 / 0.7), transparent 100%),
+    radial-gradient(2px 2px at 55% 15%, oklch(0.85 0.05 260 / 0.9), transparent 100%),
+    radial-gradient(1px 1px at 72% 48%, oklch(1 0 0 / 0.8), transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 30%, oklch(0.8 0.08 280 / 0.9), transparent 100%),
+    radial-gradient(1px 1px at 45% 85%, oklch(1 0 0 / 0.6), transparent 100%);
+}
+[data-theme="disney"] .stars-overlay {
+  opacity: 0.7;
+}
+
+/* Apple TV+ frosted glass */
+.frost-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: oklch(1 0 0 / 0.02);
+}
+[data-theme="apple"] .frost-overlay {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Premium TV focus system                                            */
+/* ------------------------------------------------------------------ */
+
+.tv-focusable {
+  position: relative;
+  transform: translateZ(0);
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 200ms ease,
+    border-color 200ms ease;
+  will-change: transform;
+  outline: none;
+}
+
+/* Gradient border ring, visible only when focused (mask-composite) */
+.tv-focusable::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    var(--focus-color, var(--focus)),
+    transparent 38%,
+    transparent 62%,
+    var(--focus-color, var(--focus))
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Triple box-shadow: 1px ring, 24px drop shadow, 80px brand glow */
+.tv-focusable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px var(--focus-color, var(--focus)),
+    0 12px 24px -8px var(--glow),
+    0 0 80px -12px var(--focus-color, var(--focus));
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.tv-focusable.is-focused {
+  transform: scale(1.04) translateZ(0);
+  z-index: 10;
+}
+.tv-focusable.is-focused::before,
+.tv-focusable.is-focused::after {
+  opacity: 1;
+}
+
+/* Top sheen line */
+.fx-sheen {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--focus-color, var(--focus)), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Corner glow */
+.fx-corner {
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle, var(--focus-color, var(--focus)) 0%, transparent 65%);
+  opacity: 0;
+  filter: blur(6px);
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.tv-focusable.is-focused .fx-sheen,
+.tv-focusable.is-focused .fx-corner {
+  opacity: 0.85;
+}
+
+/* Pulsing live dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+/* Overlay entrance */
+@keyframes overlay-in {
+  from { opacity: 0; transform: scale(0.985) translateZ(0); }
+  to { opacity: 1; transform: scale(1) translateZ(0); }
+}
+.overlay-in {
+  animation: overlay-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Hero entrance */
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(14px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+.hero-in {
+  animation: hero-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob,
+  .grain,
+  .pulse-dot,
+  .spinner,
+  .overlay-in,
+  .hero-in {
+    animation: none !important;
+  }
+  .tv-focusable {
+    transition: none;
+  }
+}
